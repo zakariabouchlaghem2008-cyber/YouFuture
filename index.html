@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0d0d0d"/>
+  <title>Mes Outils · Finance & Sommeil</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0f0e0c;
+      --bg2:        #171614;
+      --surface:    #1e1c19;
+      --surface2:   #272420;
+      --border:     #2e2b27;
+      --border2:    #3d3a35;
+      --text:       #f0ece4;
+      --text2:      #a09a90;
+      --text3:      #6b6560;
+      --gold:       #d4a853;
+      --gold2:      #f0c870;
+      --gold-dim:   rgba(212,168,83,0.12);
+      --green:      #4db87a;
+      --green2:     #2d8a55;
+      --green-dim:  rgba(77,184,122,0.1);
+      --teal:       #3bbfbf;
+      --teal2:      #2a9090;
+      --teal-dim:   rgba(59,191,191,0.1);
+      --red:        #e05c5c;
+      --red-dim:    rgba(224,92,92,0.1);
+      --sleep:      #8b6fdb;
+      --sleep2:     #6a4fc0;
+      --sleep-dim:  rgba(139,111,219,0.12);
+      --safe-top:   env(safe-area-inset-top, 0px);
+      --safe-bot:   env(safe-area-inset-bottom, 0px);
+    }
+
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── GRAIN TEXTURE ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.35;
+    }
+
+    /* ── TOP BAR (mobile) ── */
+    .top-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      background: rgba(15,14,12,0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      height: calc(52px + var(--safe-top));
+      padding-top: var(--safe-top);
+      display: flex; align-items: center; padding-left: 20px; gap: 10px;
+    }
+    .top-bar-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 8px var(--gold);
+    }
+    .nav-brand {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem; color: var(--text); letter-spacing: 0.02em;
+    }
+
+    /* ── BOTTOM NAV (mobile) ── */
+    nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      background: rgba(15,14,12,0.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: stretch;
+      padding-bottom: var(--safe-bot);
+    }
+    .nav-tab {
+      flex: 1; background: none; border: none; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; color: var(--text3);
+      padding: 10px 4px 12px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      transition: color 0.2s; -webkit-tap-highlight-color: transparent;
+      position: relative;
+    }
+    .tab-icon { font-size: 1.3rem; line-height: 1; }
+    .tab-label { font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+    .tab-line {
+      position: absolute; top: 0; left: 20%; right: 20%; height: 1.5px;
+      background: transparent; border-radius: 2px; transition: background 0.25s;
+    }
+    .nav-tab.active { color: var(--text); }
+    .nav-tab[data-page="sleep"].active .tab-line { background: var(--sleep); }
+    .nav-tab[data-page="invest"].active .tab-line { background: var(--green); }
+    .nav-tab[data-page="etf"].active .tab-line { background: var(--gold); }
+
+    /* ── PAGES ── */
+    .page {
+      display: none;
+      padding: calc(52px + var(--safe-top) + 28px) 16px calc(74px + var(--safe-bot) + 16px);
+      min-height: 100vh;
+      position: relative; z-index: 1;
+    }
+    .page.active { display: block; animation: fadeUp 0.4s ease; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .tool-wrap { max-width: 540px; margin: 0 auto; }
+
+    /* ── PAGE HEADER ── */
+    .tool-header { margin-bottom: 28px; position: relative; }
+    .tool-header-eyebrow {
+      font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase;
+      font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+    }
+    .tool-header-eyebrow::before { content:''; width:20px; height:1px; background: currentColor; opacity: 0.5; }
+    .tool-header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.2rem, 8vw, 3.2rem);
+      color: var(--text); line-height: 1.05; font-weight: 400;
+    }
+    .tool-header h1 em { font-style: italic; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px; padding: 24px 20px;
+      display: flex; flex-direction: column; gap: 22px;
+    }
+
+    /* ── FIELDS ── */
+    .field { display: flex; flex-direction: column; gap: 9px; }
+    .field-label {
+      font-size: 0.6rem; letter-spacing: 0.17em; text-transform: uppercase;
+      color: var(--text3); font-weight: 700;
+    }
+
+    input[type="time"] {
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 16px; color: var(--text);
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.2rem, 10vw, 3rem);
+      padding: 14px 18px; text-align: center; outline: none; width: 100%;
+      transition: border-color 0.2s; -webkit-appearance: none;
+    }
+    input[type="time"]:focus { border-color: var(--sleep); }
+    input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.3); cursor: pointer; }
+
+    .input-row { display: flex; gap: 10px; }
+    .input-row .field { flex: 1; }
+
+    input[type="number"] {
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 14px; color: var(--text);
+      font-size: 1.05rem; padding: 13px 14px; outline: none; width: 100%;
+      transition: border-color 0.2s; -webkit-appearance: none;
+    }
+    input[type="number"]:focus { border-color: var(--green); }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .input-suffix { position: relative; }
+    .input-suffix input { padding-right: 32px; }
+    .input-suffix span {
+      position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.7rem; color: var(--text3); pointer-events: none;
+    }
+
+    /* ── RANGE ── */
+    input[type="range"] {
+      -webkit-appearance: none; width: 100%; height: 4px;
+      background: var(--border2); border-radius: 4px; outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+      background: var(--green); cursor: pointer;
+      box-shadow: 0 0 12px rgba(77,184,122,0.4);
+    }
+    .range-labels {
+      display: flex; justify-content: space-between;
+      font-size: 0.58rem; color: var(--text3); letter-spacing: 0.04em; margin-top: 5px;
+    }
+
+    /* ── FATIGUE ── */
+    .fatigue-group { display: flex; gap: 8px; }
+    .fatigue-btn {
+      flex: 1; background: var(--bg2); border: 1px solid var(--border2); border-radius: 16px;
+      color: var(--text3); cursor: pointer; font-family: 'DM Sans', sans-serif;
+      font-size: 0.55rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 13px 6px; display: flex; flex-direction: column; align-items: center; gap: 7px;
+      transition: all 0.2s; outline: none; -webkit-tap-highlight-color: transparent;
+    }
+    .fatigue-btn .f-emoji { font-size: 1.5rem; line-height: 1; }
+    .fatigue-btn.active {
+      border-color: var(--sleep); color: var(--sleep);
+      background: var(--sleep-dim);
+      box-shadow: 0 0 20px var(--sleep-dim);
+    }
+    .fatigue-hint {
+      font-size: 0.62rem; color: var(--text2); letter-spacing: 0.02em; line-height: 1.6;
+    }
+
+    /* ── BTN ── */
+    .btn {
+      border: none; border-radius: 14px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.2em; text-transform: uppercase; padding: 17px 32px; width: 100%;
+      transition: opacity 0.15s, transform 0.12s; -webkit-tap-highlight-color: transparent;
+      position: relative; overflow: hidden;
+    }
+    .btn::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%);
+    }
+    .btn:active { opacity: 0.85; transform: scale(0.985); }
+    .btn-sleep  { background: linear-gradient(135deg, var(--sleep2), var(--sleep)); color: #fff; }
+    .btn-invest { background: linear-gradient(135deg, var(--green2), var(--green)); color: #fff; }
+    .btn-gold   { background: linear-gradient(135deg, #b8841a, var(--gold)); color: #0f0e0c; }
+
+    /* ── RESULTS ── */
+    .results {
+      margin-top: 24px; display: flex; flex-direction: column; gap: 10px;
+      opacity: 0; transform: translateY(16px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      pointer-events: none;
+    }
+    .results.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    .results-label {
+      font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text3); font-weight: 700; text-align: center;
+    }
+
+    /* ── SLEEP ROWS ── */
+    .cycle-row {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+      padding: 16px 18px; display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+      animation: rowIn 0.35s ease both; transition: border-color 0.2s;
+    }
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .cycle-row.ideal { border-color: var(--sleep); background: var(--sleep-dim); }
+
+    .row-time {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.8rem, 6.5vw, 2.2rem);
+      color: var(--text); line-height: 1;
+    }
+    .cycle-row.ideal .row-time { color: var(--sleep); }
+    .row-meta { font-size: 0.6rem; color: var(--text3); letter-spacing: 0.03em; margin-top: 4px; }
+
+    .badge {
+      font-size: 0.55rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border2);
+      color: var(--text3); background: var(--bg2);
+    }
+    .cycle-row.ideal .badge { border-color: var(--sleep); color: var(--sleep); background: var(--sleep-dim); }
+    .cycles-dots { display: flex; gap: 4px; margin-top: 6px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); }
+    .dot.filled { background: var(--text3); }
+    .cycle-row.ideal .dot.filled { background: var(--sleep); }
+
+    .divider { display: flex; align-items: center; gap: 10px; }
+    .divider-line { flex: 1; height: 1px; background: var(--border); }
+    .divider-label { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text3); white-space: nowrap; }
+
+    .note { text-align: center; font-size: 0.62rem; color: var(--text3); line-height: 2; }
+
+    /* ── INVEST STATS ── */
+    .invest-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+      padding: 16px 10px; text-align: center; animation: rowIn 0.35s ease both;
+    }
+    .stat-card.highlight {
+      background: var(--green-dim); border-color: var(--green2);
+      box-shadow: 0 0 24px var(--green-dim);
+    }
+    .stat-val {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(0.88rem, 3vw, 1.25rem);
+      color: var(--text); line-height: 1.1;
+    }
+    .stat-card.highlight .stat-val { color: var(--green); }
+    .stat-lbl { font-size: 0.53rem; font-weight: 700; color: var(--text3); letter-spacing: 0.09em; text-transform: uppercase; margin-top: 6px; }
+
+    .chart-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px; animation: rowIn 0.35s ease 0.1s both;
+    }
+    .chart-wrap canvas { max-height: 180px; }
+
+    .breakdown-rows { display: flex; flex-direction: column; gap: 8px; }
+    .breakdown-row {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 13px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      animation: rowIn 0.35s ease both; gap: 10px;
+    }
+    .br-label { font-size: 0.63rem; font-weight: 500; color: var(--text2); }
+    .br-sub { font-size: 0.57rem; color: var(--text3); margin-top: 2px; }
+    .br-val { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--text); flex-shrink: 0; }
+
+    /* ── ETF PAGE ── */
+    .period-selector {
+      display: flex; gap: 6px; margin-bottom: 22px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 3px;
+    }
+    .period-selector::-webkit-scrollbar { display: none; }
+    .period-btn {
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: 20px; color: var(--text3); cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 16px;
+      white-space: nowrap; flex-shrink: 0; transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .period-btn.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+
+    .etf-section-title {
+      font-size: 0.57rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--text3); font-weight: 700;
+      display: flex; align-items: center; gap: 10px; margin-top: 8px;
+    }
+    .etf-section-title span { opacity: 0.5; }
+    .etf-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    .etf-grid { display: flex; flex-direction: column; gap: 12px; }
+
+    .etf-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 18px 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      animation: rowIn 0.35s ease both; transition: border-color 0.2s;
+    }
+    .etf-card:hover { border-color: var(--border2); }
+    .etf-card.halal { border-left: 2px solid var(--gold); }
+    .etf-card.conventional { border-left: 2px solid var(--teal); }
+
+    .etf-card-header { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .etf-card-left { flex: 1; min-width: 0; }
+    .etf-ticker {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.2rem, 4.5vw, 1.5rem);
+      color: var(--text); line-height: 1;
+    }
+    .etf-name {
+      font-size: 0.6rem; color: var(--text3); letter-spacing: 0.02em;
+      margin-top: 4px; line-height: 1.5;
+      overflow: hidden; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+
+    .etf-price-block { text-align: right; flex-shrink: 0; }
+    .etf-price {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.3rem, 5vw, 1.7rem); color: var(--text); line-height: 1;
+    }
+    .etf-change {
+      font-size: 0.63rem; font-weight: 700; letter-spacing: 0.02em;
+      margin-top: 5px; padding: 3px 9px; border-radius: 8px; display: inline-block;
+    }
+    .etf-change.pos { color: var(--green); background: var(--green-dim); }
+    .etf-change.neg { color: var(--red); background: var(--red-dim); }
+    .etf-change.neu { color: var(--text3); background: var(--surface2); }
+
+    .etf-mini-chart { height: 52px; width: 100%; }
+
+    .etf-meta { display: flex; gap: 16px; overflow-x: auto; scrollbar-width: none; }
+    .etf-meta::-webkit-scrollbar { display: none; }
+    .etf-meta-item { flex-shrink: 0; }
+    .etf-meta-lbl { font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); font-weight: 700; }
+    .etf-meta-val { font-size: 0.72rem; color: var(--text2); margin-top: 3px; }
+
+    .halal-badge, .conventional-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.52rem; letter-spacing: 0.07em; text-transform: uppercase;
+      border-radius: 8px; padding: 3px 8px; font-weight: 700; margin-top: 5px;
+    }
+    .halal-badge { color: var(--gold); border: 1px solid rgba(212,168,83,0.25); background: var(--gold-dim); }
+    .conventional-badge { color: var(--teal); border: 1px solid rgba(59,191,191,0.2); background: var(--teal-dim); }
+
+    .etf-loading { text-align: center; padding: 52px 20px; color: var(--text3); font-size: 0.72rem; letter-spacing: 0.08em; }
+    .etf-error { text-align: center; padding: 12px; color: var(--red); font-size: 0.6rem; background: var(--red-dim); border: 1px solid rgba(224,92,92,0.2); border-radius: 12px; line-height: 1.6; }
+    .etf-success { font-size: 0.58rem; color: var(--green); letter-spacing: 0.05em; margin-top: 4px; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block; width: 15px; height: 15px;
+      border: 2px solid var(--border2); border-top-color: var(--gold);
+      border-radius: 50%; animation: spin 0.75s linear infinite; vertical-align: middle; margin-right: 8px;
+    }
+
+    .source-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.52rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 20px;
+      border: 1px solid var(--border2); color: var(--text3); background: var(--surface2);
+      margin-top: 4px;
+    }
+    .source-badge.live { border-color: rgba(77,184,122,0.3); color: var(--green); background: var(--green-dim); }
+    .source-badge.live::before { content:'●'; font-size: 0.5rem; }
+    .source-badge.ai { border-color: rgba(212,168,83,0.3); color: var(--gold); background: var(--gold-dim); }
+    .source-badge.ai::before { content:'✦'; }
+
+    .refresh-btn {
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: 20px; color: var(--text2); cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase; padding: 11px 24px;
+      transition: all 0.2s; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; gap: 6px;
+    }
+    .refresh-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .refresh-btn.spinning { opacity: 0.4; pointer-events: none; }
+
+    .last-update { font-size: 0.55rem; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .disclaimer {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 14px 16px;
+      font-size: 0.59rem; color: var(--text3); letter-spacing: 0.02em;
+      line-height: 1.9; text-align: center;
+    }
+
+    /* ── AI ANALYSIS BOX ── */
+    .ai-analysis {
+      background: linear-gradient(135deg, var(--gold-dim), rgba(139,111,219,0.05));
+      border: 1px solid rgba(212,168,83,0.2);
+      border-radius: 16px; padding: 16px;
+      font-size: 0.63rem; color: var(--text2); line-height: 1.8;
+      animation: rowIn 0.4s ease both;
+    }
+    .ai-analysis-title {
+      font-size: 0.55rem; letter-spacing: 0.16em; text-transform: uppercase;
+      font-weight: 700; color: var(--gold); margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* ── DESKTOP ── */
+    @media (min-width: 640px) {
+      .top-bar { display: none; }
+      nav {
+        position: sticky; bottom: auto; top: 0;
+        border-top: none; border-bottom: 1px solid var(--border);
+        height: 60px; flex-direction: row;
+        justify-content: space-between; padding: 0 36px;
+      }
+      nav::before {
+        content: 'Mes outils';
+        font-family: 'DM Serif Display', serif;
+        font-size: 1.1rem; color: var(--text); letter-spacing: 0.02em;
+        display: flex; align-items: center;
+      }
+      .tab-line { top: auto; bottom: 0; height: 2px; }
+      .nav-tab { flex: initial; flex-direction: row; gap: 7px; padding: 8px 18px; border-radius: 8px; }
+      .tab-icon { font-size: 0.95rem; }
+      .tab-label { font-size: 0.65rem; }
+      .page { padding: calc(60px + 44px) 24px 60px; }
+      .card { padding: 30px 28px; }
+    }
+    @media (min-width: 900px) { .tool-wrap { max-width: 620px; } }
+  </style>
+</head>
+<body>
+
+<div class="top-bar"><div class="top-bar-dot"></div><span class="nav-brand">Mes outils</span></div>
+
+<nav>
+  <div style="display:flex;align-items:center;gap:4px">
+    <button class="nav-tab active" data-page="sleep" onclick="switchPage('sleep',this)">
+      <span class="tab-icon">🌙</span><span class="tab-label">Sommeil</span><span class="tab-line"></span>
+    </button>
+    <button class="nav-tab" data-page="invest" onclick="switchPage('invest',this)">
+      <span class="tab-icon">📈</span><span class="tab-label">Invest</span><span class="tab-line"></span>
+    </button>
+    <button class="nav-tab" data-page="etf" onclick="switchPage('etf',this)">
+      <span class="tab-icon">☪️</span><span class="tab-label">ETF Halal</span><span class="tab-line"></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ══════════ SLEEP ══════════ -->
+<div class="page active" id="page-sleep">
+  <div class="tool-wrap">
+    <div class="tool-header">
+      <div class="tool-header-eyebrow" style="color:var(--sleep)">Cycles de sommeil</div>
+      <h1>Bonne <em>nuit</em></h1>
+    </div>
+    <div class="card">
+      <div class="field">
+        <div class="field-label">Comment tu te sens ce soir ?</div>
+        <div class="fatigue-group">
+          <button class="fatigue-btn" data-fatigue="0" onclick="selectFatigue(this)">
+            <span class="f-emoji">😐</span><span>Pas fatigué</span>
+          </button>
+          <button class="fatigue-btn active" data-fatigue="1" onclick="selectFatigue(this)">
+            <span class="f-emoji">😴</span><span>Un peu</span>
+          </button>
+          <button class="fatigue-btn" data-fatigue="2" onclick="selectFatigue(this)">
+            <span class="f-emoji">🥱</span><span>Très fatigué</span>
+          </button>
+        </div>
+        <div class="fatigue-hint" id="fatigue-hint">~15 min pour t'endormir · endormissement normal</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Heure de coucher</div>
+        <input type="time" id="bedtime" value="23:00"/>
+      </div>
+      <button class="btn btn-sleep" onclick="calcSleep()">Calculer mes cycles →</button>
+    </div>
+    <div class="results" id="sleep-results">
+      <div class="results-label" id="sleep-results-title"></div>
+      <div id="cycles-list"></div>
+      <p class="note">Chaque cycle dure ~90 min · endormissement inclus<br/>Se réveiller en fin de cycle = énergie maximale ✦</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ INVEST ══════════ -->
+<div class="page" id="page-invest">
+  <div class="tool-wrap">
+    <div class="tool-header">
+      <div class="tool-header-eyebrow" style="color:var(--green)">Simulateur</div>
+      <h1><em>Croissance</em> du capital</h1>
+    </div>
+    <div class="card">
+      <div class="input-row">
+        <div class="field">
+          <div class="field-label">Capital initial</div>
+          <div class="input-suffix">
+            <input type="number" id="capital" value="1000" min="0"/>
+            <span>€</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Apport mensuel</div>
+          <div class="input-suffix">
+            <input type="number" id="monthly" value="100" min="0"/>
+            <span>€</span>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label">Rendement annuel — <span id="rate-display">7%</span></div>
+        <input type="range" id="rate" min="1" max="20" value="7" step="0.5"
+               oninput="document.getElementById('rate-display').textContent=this.value+'%'"/>
+        <div class="range-labels"><span>1%</span><span>5%</span><span>10%</span><span>15%</span><span>20%</span></div>
+      </div>
+      <div class="field">
+        <div class="field-label">Durée — <span id="years-display">10 ans</span></div>
+        <input type="range" id="years" min="1" max="40" value="10"
+               oninput="document.getElementById('years-display').textContent=this.value+' ans'"/>
+        <div class="range-labels"><span>1</span><span>10</span><span>20</span><span>30</span><span>40 ans</span></div>
+      </div>
+      <button class="btn btn-invest" onclick="calcInvest()">Simuler →</button>
+    </div>
+    <div class="results" id="invest-results">
+      <div class="results-label" id="invest-results-title"></div>
+      <div class="invest-stats" id="invest-stats"></div>
+      <div class="chart-wrap"><canvas id="invest-chart"></canvas></div>
+      <div class="breakdown-rows" id="invest-breakdown"></div>
+      <p class="note">Simulation indicative · hors fiscalité et inflation<br/>Les performances passées ne préjugent pas du futur</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ETF HALAL ══════════ -->
+<div class="page" id="page-etf">
+  <div class="tool-wrap">
+    <div class="tool-header">
+      <div class="tool-header-eyebrow" style="color:var(--gold)">Marché & Shariah</div>
+      <h1>ETF <em>Halal</em></h1>
+    </div>
+    <div class="period-selector" id="period-selector">
+      <button class="period-btn" onclick="setPeriod('1W',this)">1 sem</button>
+      <button class="period-btn" onclick="setPeriod('1M',this)">1 mois</button>
+      <button class="period-btn" onclick="setPeriod('3M',this)">3 mois</button>
+      <button class="period-btn" onclick="setPeriod('6M',this)">6 mois</button>
+      <button class="period-btn active" onclick="setPeriod('1Y',this)">12 mois</button>
+    </div>
+    <div class="etf-grid" id="etf-grid">
+      <div class="etf-loading"><span class="spinner"></span>Chargement des données…</div>
+    </div>
+    <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;align-items:center;">
+      <button class="refresh-btn" id="refresh-btn" onclick="loadETFs()">
+        <span id="refresh-icon">↻</span> Actualiser
+      </button>
+      <div class="last-update" id="last-update"></div>
+    </div>
+    <div class="disclaimer" style="margin-top:16px;">
+      ⚠️ Données indicatives · cours pouvant présenter un léger décalage temporel<br/>
+      Ne constitue pas un conseil en investissement · Vérifier auprès d'un conseiller agréé
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─── NAV ─── */
+let etfLoaded = false;
+function switchPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'etf' && !etfLoaded) loadETFs();
+}
+
+/* ─── SLEEP ─── */
+const FATIGUE_DATA = [
+  { mins: 25, hint: "~25 min pour t'endormir · repos préalable conseillé" },
+  { mins: 15, hint: "~15 min pour t'endormir · endormissement normal" },
+  { mins:  7, hint: "~7 min pour t'endormir · tu vas sombrer rapidement" },
+];
+let currentFatigue = 1;
+function selectFatigue(btn) {
+  document.querySelectorAll('.fatigue-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFatigue = parseInt(btn.dataset.fatigue);
+  document.getElementById('fatigue-hint').textContent = FATIGUE_DATA[currentFatigue].hint;
+}
+function addMinutes(ts, mins) {
+  const [h, m] = ts.split(':').map(Number);
+  const t = h * 60 + m + mins;
+  return `${String(Math.floor(t / 60) % 24).padStart(2,'0')}:${String(t % 60).padStart(2,'0')}`;
+}
+function calcSleep() {
+  const bedtime = document.getElementById('bedtime').value;
+  if (!bedtime) return;
+  const FALL = FATIGUE_DATA[currentFatigue].mins;
+  const list = document.getElementById('cycles-list');
+  list.innerHTML = '';
+  document.getElementById('sleep-results-title').textContent = `Réveil si coucher à ${bedtime}`;
+  for (let i = 1; i <= 6; i++) {
+    if (i === 1) list.appendChild(makeDivider('Courte nuit'));
+    if (i === 5) list.appendChild(makeDivider('Recommandé'));
+    const wt = addMinutes(bedtime, FALL + i * 90);
+    const ideal = i >= 5;
+    const sh = i * 90 / 60;
+    const sl = sh % 1 === 0 ? `${sh}h` : `${Math.floor(sh)}h${(sh % 1 * 60).toFixed(0)}`;
+    const dots = Array.from({length: 6}, (_, di) => `<div class="dot ${di < i ? 'filled' : ''}"></div>`).join('');
+    const row = document.createElement('div');
+    row.className = 'cycle-row' + (ideal ? ' ideal' : '');
+    row.style.animationDelay = `${i * 0.07}s`;
+    row.innerHTML = `
+      <div>
+        <div class="row-time">${wt}</div>
+        <div class="row-meta">${sl} de sommeil · ${i} cycle${i > 1 ? 's' : ''}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="badge">${ideal ? '✦ idéal' : `${i} cycle${i>1?'s':''}`}</div>
+        <div class="cycles-dots" style="justify-content:flex-end;margin-top:8px">${dots}</div>
+      </div>`;
+    list.appendChild(row);
+  }
+  showResults('sleep-results');
+}
+function makeDivider(label) {
+  const d = document.createElement('div');
+  d.className = 'divider';
+  d.innerHTML = `<div class="divider-line"></div><div class="divider-label">${label}</div><div class="divider-line"></div>`;
+  return d;
+}
+
+/* ─── INVEST ─── */
+let chartInstance = null;
+function fmt(n) { return new Intl.NumberFormat('fr-FR', {maximumFractionDigits: 0}).format(n) + ' €'; }
+function calcInvest() {
+  const capital  = parseFloat(document.getElementById('capital').value) || 0;
+  const monthly  = parseFloat(document.getElementById('monthly').value) || 0;
+  const rate     = parseFloat(document.getElementById('rate').value) || 7;
+  const years    = parseInt(document.getElementById('years').value) || 10;
+  const mr = rate / 100 / 12, months = years * 12;
+  let balance = capital, totalInvested = capital;
+  const labels = [], dataB = [], dataI = [];
+  for (let m = 0; m <= months; m++) {
+    if (m > 0) { balance = balance * (1 + mr) + monthly; totalInvested += monthly; }
+    if (m % 12 === 0) { labels.push(`An ${m/12}`); dataB.push(Math.round(balance)); dataI.push(Math.round(totalInvested)); }
+  }
+  const totalInt = balance - totalInvested;
+  const mul = (balance / (capital + monthly * months)).toFixed(2);
+  const statsEl = document.getElementById('invest-stats');
+  statsEl.innerHTML = `
+    <div class="stat-card"><div class="stat-val">${fmt(totalInvested)}</div><div class="stat-lbl">Versé</div></div>
+    <div class="stat-card"><div class="stat-val">${fmt(totalInt)}</div><div class="stat-lbl">Intérêts</div></div>
+    <div class="stat-card highlight"><div class="stat-val">${fmt(balance)}</div><div class="stat-lbl">Capital final</div></div>`;
+  statsEl.querySelectorAll('.stat-card').forEach((c, i) => c.style.animationDelay = `${i * 0.08}s`);
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(document.getElementById('invest-chart').getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: 'Capital total', data: dataB, borderColor: '#4db87a', backgroundColor: 'rgba(77,184,122,0.08)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 2, pointBackgroundColor: '#4db87a' },
+      { label: 'Versements',   data: dataI, borderColor: '#2a9090', backgroundColor: 'rgba(42,144,144,0.04)', borderWidth: 1.5, fill: true, tension: 0.4, pointRadius: 0, borderDash: [5,4] }
+    ]},
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { font: { family: 'DM Sans', size: 10 }, color: '#a09a90', boxWidth: 10 } },
+        tooltip: { callbacks: { label: ctx => ' ' + fmt(ctx.raw) } }
+      },
+      scales: {
+        x: { ticks: { font: { family: 'DM Sans', size: 9 }, color: '#6b6560', maxRotation: 0 }, grid: { color: 'rgba(255,255,255,0.03)' } },
+        y: { ticks: { font: { family: 'DM Sans', size: 9 }, color: '#6b6560', callback: v => new Intl.NumberFormat('fr-FR', {notation: 'compact'}).format(v) + '€' }, grid: { color: 'rgba(255,255,255,0.03)' } }
+      }
+    }
+  });
+  const bk = document.getElementById('invest-breakdown');
+  bk.innerHTML = '';
+  [{label: 'Capital de départ', val: fmt(capital), sub: ''},
+   {label: `Apports × ${months} mois`, val: fmt(monthly * months), sub: `${monthly} €/mois pendant ${years} an${years>1?'s':''}`},
+   {label: 'Intérêts composés',        val: fmt(totalInt),          sub: `×${mul} sur l'argent investi`}
+  ].forEach((it, i) => {
+    bk.innerHTML += `<div class="breakdown-row" style="animation-delay:${i*0.08}s">
+      <div><div class="br-label">${it.label}</div>${it.sub ? `<div class="br-sub">${it.sub}</div>` : ''}</div>
+      <div class="br-val">${it.val}</div></div>`;
+  });
+  document.getElementById('invest-results-title').textContent = `Projection sur ${years} an${years>1?'s':''}`;
+  showResults('invest-results');
+}
+function showResults(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('visible'); void el.offsetWidth; el.classList.add('visible');
+}
+
+/* ─── ETF DATA ─── */
+const ETF_LIST = [
+  { ticker: 'ISWD.L',  name: 'iShares MSCI World Islamic UCITS ETF',       flag: '🌍', zone: 'Monde développés',       halal: true  },
+  { ticker: 'SPUS',    name: 'SP Funds S&P 500 Shariah ETF',                flag: '🇺🇸', zone: 'S&P 500 Shariah',         halal: true  },
+  { ticker: 'HLAL',    name: 'Wahed FTSE USA Shariah ETF',                  flag: '🇺🇸', zone: 'Wahed USA Shariah',       halal: true  },
+  { ticker: 'ISDE',    name: 'iShares MSCI Emerging Markets Islamic ETF',   flag: '🌏', zone: 'Marchés émergents',       halal: true  },
+  { ticker: 'SPSK',    name: 'SP Funds Global Sukuk ETF',                   flag: '🏦', zone: 'Sukuk · revenu fixe',    halal: true  },
+  { ticker: 'HIEA.L',  name: 'HSBC MSCI Europe Islamic UCITS ETF',          flag: '🇪🇺', zone: 'Europe Islamique',        halal: true  },
+  { ticker: 'IWDA.L',  name: 'iShares Core MSCI World UCITS ETF',           flag: '🌍', zone: 'Monde (référence)',       halal: false },
+  { ticker: 'CSPX.L',  name: 'iShares Core S&P 500 UCITS ETF (Conv.)',      flag: '🇺🇸', zone: 'S&P 500 (référence)',     halal: false },
+];
+
+const PERIOD_MAP = {
+  '1W': { range: '5d',  interval: '1d'  },
+  '1M': { range: '1mo', interval: '1d'  },
+  '3M': { range: '3mo', interval: '1wk' },
+  '6M': { range: '6mo', interval: '1wk' },
+  '1Y': { range: '1y',  interval: '1mo' },
+};
+const PLABEL = { '1W': '1 sem', '1M': '1 mois', '3M': '3 mois', '6M': '6 mois', '1Y': '12 mois' };
+let currentPeriod = '1Y', miniCharts = {};
+
+function setPeriod(p, btn) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadETFs();
+}
+
+/* Try live Yahoo Finance via multiple CORS proxies */
+const PROXIES = [
+  t => `https://api.allorigins.win/get?url=${encodeURIComponent(t)}`,
+  t => `https://corsproxy.io/?${encodeURIComponent(t)}`,
+  t => `https://proxy.cors.sh/${t}`,
+];
+
+async function fetchYahoo(ticker) {
+  const { range, interval } = PERIOD_MAP[currentPeriod];
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=${range}&interval=${interval}&includePrePost=false`;
+
+  for (const makeProxy of PROXIES) {
+    try {
+      const res = await fetch(makeProxy(url), { signal: AbortSignal.timeout(7000) });
+      if (!res.ok) continue;
+      let raw;
+      try { raw = await res.json(); } catch { continue; }
+      // allorigins wraps in .contents string
+      const data = raw.contents ? JSON.parse(raw.contents) : raw;
+      const result = data?.chart?.result?.[0];
+      if (!result) continue;
+      const meta = result.meta;
+      const closes = result.indicators?.quote?.[0]?.close ?? [];
+      const ts = result.timestamp ?? [];
+      const hist = closes.map((c, i) => ({ t: ts[i], v: c })).filter(d => d.v != null);
+      const cur = meta.regularMarketPrice ?? hist[hist.length - 1]?.v;
+      const prev = meta.previousClose ?? hist[0]?.v;
+      const change = cur && prev ? ((cur - prev) / prev * 100) : null;
+      const perfPeriod = hist.length >= 2 ? ((hist[hist.length-1].v - hist[0].v) / hist[0].v * 100) : null;
+      return { currentPrice: cur, change, history: hist, currency: meta.currency ?? '', perfPeriod, source: 'live' };
+    } catch(e) { /* try next proxy */ }
+  }
+  return null; // all proxies failed
+}
+
+/* Fallback: ask Claude AI for estimated ETF data */
+async function fetchFromClaude(etfList) {
+  const today = new Date().toISOString().split('T')[0];
+  const prompt = `Tu es un assistant financier. Donne-moi des données approximatives récentes (au ${today}) pour ces ETFs. Pour chaque ETF, retourne UNIQUEMENT un JSON valide (pas de markdown, pas de texte autour) de ce format:
+{
+  "TICKER": { "price": 123.45, "currency": "USD", "change_1d_pct": 0.52, "perf_1y_pct": 8.3, "trend": [100,101,102,103,105,107,106,108,110,112,111,113] }
+}
+Les tickers: ${etfList.map(e => e.ticker).join(', ')}
+Utilise tes meilleures estimations basées sur les marchés récents. trend = tableau de 12 valeurs indexées représentant l'évolution relative sur 1 an (base 100). Réponds UNIQUEMENT avec le JSON.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const text = data.content?.map(c => c.text || '').join('').trim();
+    const clean = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
+  } catch (e) { return null; }
+}
+
+async function loadETFs() {
+  etfLoaded = true;
+  const grid = document.getElementById('etf-grid');
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  document.getElementById('refresh-icon').textContent = '↻';
+  Object.values(miniCharts).forEach(c => c.destroy()); miniCharts = {};
+  grid.innerHTML = '<div class="etf-loading"><span class="spinner"></span>Tentative de connexion aux marchés…</div>';
+
+  // Attempt live data for all
+  const results = await Promise.allSettled(ETF_LIST.map(e => fetchYahoo(e.ticker)));
+  const liveCount = results.filter(r => r.status === 'fulfilled' && r.value !== null).length;
+
+  let aiData = null;
+  const failedETFs = ETF_LIST.filter((_, i) => results[i].status === 'rejected' || results[i].value === null);
+  if (failedETFs.length > 0) {
+    grid.innerHTML = `<div class="etf-loading"><span class="spinner"></span>Données live partielles · Consultation IA pour ${failedETFs.length} ETF…</div>`;
+    aiData = await fetchFromClaude(failedETFs);
+  }
+
+  // Merge results
+  const finalData = ETF_LIST.map((etf, i) => {
+    const live = results[i].value;
+    if (live) return { ...etf, data: live, source: 'live' };
+    // fallback to AI
+    const key = etf.ticker.toUpperCase().replace('.L','');
+    const aiEntry = aiData?.[etf.ticker] || aiData?.[key];
+    if (aiEntry) {
+      const trend = aiEntry.trend || [];
+      const history = trend.map((v, idx) => ({ t: Date.now()/1000 - (trend.length - idx) * 2592000, v: aiEntry.price * v / trend[trend.length-1] }));
+      return {
+        ...etf,
+        data: {
+          currentPrice: aiEntry.price,
+          change: aiEntry.change_1d_pct ?? null,
+          perfPeriod: aiEntry.perf_1y_pct ?? null,
+          history, currency: aiEntry.currency ?? 'USD', source: 'ai'
+        }
+      };
+    }
+    return { ...etf, data: null };
+  });
+
+  let html = '';
+  html += `<div class="etf-section-title"><span>☪️</span> ETF Halal · Shariah</div>`;
+  finalData.filter(e => e.halal).forEach((e, i) => { html += buildCard(e, i); });
+  html += `<div class="etf-section-title" style="margin-top:8px"><span>📊</span> Référence conventionnelle</div>`;
+  finalData.filter(e => !e.halal).forEach((e, i) => { html += buildCard(e, i + 6); });
+  grid.innerHTML = html;
+
+  finalData.forEach((e, i) => { if (e.data?.history?.length > 1) drawMiniChart(i, e.data.history, e.data.source); });
+
+  const livePct = Math.round(liveCount / ETF_LIST.length * 100);
+  const now = new Date();
+  document.getElementById('last-update').textContent = `Mis à jour · ${now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})} · ${liveCount} live / ${ETF_LIST.length - liveCount} IA`;
+  btn.classList.remove('spinning');
+}
+
+function buildCard(etf, idx) {
+  if (!etf.data) {
+    return `<div class="etf-card ${etf.halal ? 'halal' : 'conventional'}" style="animation-delay:${idx*0.05}s">
+      <div class="etf-card-header">
+        <div class="etf-card-left">
+          <div class="etf-ticker">${etf.flag} ${etf.ticker.replace('.L','')}</div>
+          <div class="etf-name">${etf.name}</div>
+          ${etf.halal ? '<div class="halal-badge">☪️ Shariah</div>' : '<div class="conventional-badge">📊 Conventionnel</div>'}
+        </div>
+        <div class="etf-price-block"><div class="etf-price" style="color:var(--text3)">—</div><div class="etf-change neu">N/D</div></div>
+      </div>
+      <div class="etf-error">Données indisponibles pour le moment</div>
+    </div>`;
+  }
+  const d = etf.data;
+  const price = d.currentPrice != null ? d.currentPrice.toFixed(2) : '—';
+  let chHtml = `<div class="etf-change neu">—</div>`;
+  if (d.change != null) {
+    const s = d.change >= 0 ? '+' : '';
+    const cls = d.change > 0 ? 'pos' : d.change < 0 ? 'neg' : 'neu';
+    chHtml = `<div class="etf-change ${cls}">${s}${d.change.toFixed(2)}%</div>`;
+  }
+  const perf = d.perfPeriod ?? (d.history.length >= 2 ? ((d.history[d.history.length-1].v - d.history[0].v) / d.history[0].v * 100) : null);
+  const ps = perf != null ? `${perf >= 0 ? '+' : ''}${perf.toFixed(2)}%` : '—';
+  const pc = perf != null ? (perf >= 0 ? 'pos' : 'neg') : 'neu';
+  const srcBadge = d.source === 'live'
+    ? `<span class="source-badge live">Live</span>`
+    : `<span class="source-badge ai">Estimé IA</span>`;
+
+  return `<div class="etf-card ${etf.halal ? 'halal' : 'conventional'}" style="animation-delay:${idx*0.05}s">
+    <div class="etf-card-header">
+      <div class="etf-card-left">
+        <div class="etf-ticker">${etf.flag} ${etf.ticker.replace('.L','')}</div>
+        <div class="etf-name">${etf.name}</div>
+        ${etf.halal ? '<div class="halal-badge">☪️ Shariah</div>' : '<div class="conventional-badge">📊 Conventionnel</div>'}
+        ${srcBadge}
+      </div>
+      <div class="etf-price-block">
+        <div class="etf-price">${price} <span style="font-size:0.58rem;color:var(--text3)">${d.currency}</span></div>
+        ${chHtml}
+      </div>
+    </div>
+    <canvas class="etf-mini-chart" id="chart-${idx}"></canvas>
+    <div class="etf-meta">
+      <div class="etf-meta-item"><div class="etf-meta-lbl">Zone</div><div class="etf-meta-val">${etf.zone}</div></div>
+      <div class="etf-meta-item"><div class="etf-meta-lbl">Perf ${PLABEL[currentPeriod]}</div><div class="etf-meta-val etf-change ${pc}" style="background:none;padding:0">${ps}</div></div>
+      <div class="etf-meta-item"><div class="etf-meta-lbl">Devise</div><div class="etf-meta-val">${d.currency || '—'}</div></div>
+    </div>
+  </div>`;
+}
+
+function drawMiniChart(idx, history, source) {
+  const canvas = document.getElementById(`chart-${idx}`);
+  if (!canvas || history.length < 2) return;
+  const vals = history.map(d => d.v);
+  const up = vals[vals.length - 1] >= vals[0];
+  const color = up ? '#4db87a' : '#e05c5c';
+  const bg = up ? 'rgba(77,184,122,0.07)' : 'rgba(224,92,92,0.07)';
+  const isDashed = source === 'ai';
+  miniCharts[idx] = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: history.map((_, i) => i),
+      datasets: [{ data: vals, borderColor: color, backgroundColor: bg, borderWidth: 1.5, fill: true, tension: 0.4, pointRadius: 0, borderDash: isDashed ? [4,3] : [] }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toFixed(2)}`, title: () => '' } } },
+      scales: { x: { display: false }, y: { display: false } },
+      animation: { duration: 600 }
+    }
+  });
+}
+</script>
+</body>
+</html>
